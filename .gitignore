@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+store.sqlite3
+store.sqlite3-*
+invoices/
+decks/
+.venv/
+myenv/
+.vscode/
