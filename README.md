@@ -71,8 +71,60 @@ python -m pytest tests/ -v
 
 8 tests exercise the tool layer directly: GST math, oversell guard, idempotent finalize,
 khata flow + refusal, below-cost guard, concurrent-race prevention, multi-turn bill edits.
+## Deployment
 
-## Not implemented (stretch)
+The Telegram bot is deployed on **Railway** and runs continuously using Telegram long polling.
 
-Branded invoices, scheduled decks, reorder-from-velocity, FEFO/expiry, voice orders,
-Hindi/Tamil, barcode lookup — scoped out to prioritize the graded hard parts above.
+### Railway Deployment
+
+1. Push the project to GitHub.
+2. Create a new project on Railway.
+3. Connect the GitHub repository.
+4. Add the following environment variables in Railway:
+
+```env
+LLM_PROVIDER=gemini
+TELEGRAM_BOT_TOKEN=<your-telegram-bot-token>
+GEMINI_API_KEY=<your-gemini-api-key>
+GEMINI_MODEL=gemini-flash-lite-latest
+STORE_DB_PATH=./store.sqlite3
+INVOICE_OUTPUT_DIR=./invoices
+DECK_OUTPUT_DIR=./decks
+Railway installs the dependencies from requirements.txt.
+Start the bot with:
+python bot.py
+
+## **Production Flow**
+Telegram User
+      │
+      ▼
+Telegram Bot API
+      │
+      ▼
+Railway
+      │
+      ▼
+bot.py
+      │
+      ▼
+Agent Control Loop
+(observe → reason → tool call → result)
+      │
+      ├── Inventory Tools
+      ├── Billing Tools
+      ├── Khata Tools
+      ├── Analytics Tools
+      ├── Document Tools
+      └── Preference Tools
+      │
+      ▼
+SQLite Database
+
+The application uses Telegram long polling, so no separate frontend or webhook server is required. Railway keeps the bot process running and provides the environment variables required by the application.
+
+**## Deployment Notes**
+Secrets are stored as Railway environment variables and are not committed to Git.
+SQLite persistence is used for products, bills, stock movements, khata transactions, preferences, and idempotency records.
+Generated invoices and analysis decks are created by the running application.
+The bot can be restarted without losing business data stored in SQLite.
+
